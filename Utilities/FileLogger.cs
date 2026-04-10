@@ -13,7 +13,7 @@ namespace Yell.Utilities
         static readonly string LogFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
         public static async Task WriteLogAsync(string direction, string rawData, string parsedValue)
         {
-            string displayValue=string.IsNullOrWhiteSpace(parsedValue)?"-":parsedValue;
+            string displayValue = string.IsNullOrWhiteSpace(parsedValue) ? "-" : parsedValue;
             if (!Directory.Exists(LogFolder))
                 Directory.CreateDirectory(LogFolder);
             string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".log";
@@ -22,10 +22,10 @@ namespace Yell.Utilities
             await _semaphore.WaitAsync();
             try
             {
-                
+
                 await File.AppendAllTextAsync(filePath, logLine, Encoding.UTF8);
             }
-           finally {_semaphore.Release(); }
+            finally { _semaphore.Release(); }
         }
     }
 }

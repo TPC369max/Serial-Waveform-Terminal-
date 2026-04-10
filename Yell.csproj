@@ -7,12 +7,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64</Platforms>
+	  <ApplicationIcon>Assets\5000_1.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="ScottPlot.WPF" Version="4.1.71" />
     <PackageReference Include="System.IO.Ports" Version="10.0.5" />
+
+	  <Resource Include="Assets\5000_1.ico"/>
   </ItemGroup>
 
 </Project>

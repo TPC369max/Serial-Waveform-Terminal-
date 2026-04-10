@@ -4,84 +4,265 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Yell"
-        xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF" 
+        xmlns:Utils="clr-namespace:Yell"
+        xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="600">
-    <Window.DataContext>
-        <local:MainViewModel/>
-    </Window.DataContext>
-    <Grid>
-        <GroupBox Header="串口参数配置" Margin="10" Padding="5">
-            <StackPanel>
-                <!-- 校验位 -->
-                <DockPanel Margin="5">
-                    <TextBlock Text="校验位：" Width="80" VerticalAlignment="Center"/>
-                    <ComboBox ItemsSource="{Binding ParityMap.Keys}" SelectedItem="{Binding SelectedParityKey}" />
-                </DockPanel>
+        Title="TPCmax369 - 高频串行通讯监控系统 v1.0"
+        Height="720" Width="1050"
+        Background="#F4F5F7"
+        WindowStartupLocation="CenterScreen">
 
-                <!-- 停止位 -->
-                <DockPanel Margin="5">
-                    <TextBlock Text="停止位：" Width="80" VerticalAlignment="Center"/>
-                    <ComboBox ItemsSource="{Binding StopBitsMap.Keys}" SelectedItem="{Binding SelectedStopBitsKey}" />
-                </DockPanel>
-                <DockPanel>
-                    <TextBlock Text="选串口：" Width="80" VerticalAlignment="Center"/>
-                    <ComboBox ItemsSource="{Binding AvailablePorts}" 
-          SelectedItem="{Binding SelectedPort}" 
-          Width="100"/>
-                </DockPanel>
-                <DockPanel>
-                    <Button Content="打开串口" 
-Command="{Binding StartConnectCommand}" 
-Height="30" 
-Width="100" 
-Margin="0,20,0,0" 
-HorizontalAlignment="Left"/>
-                    <Button Content="发送" Command="{Binding ExecuteSendCommand}" Height="30" 
-Width="100" 
-Margin="0,20,0,0" />
-                    <Button Content="清空测试" 
-Command="{Binding ClearDataCommand}" 
-Background="LightBlue" 
-Margin="5"/>
-                </DockPanel>
-                <DockPanel>
-                    <TextBox x:Name="txtIn" Text="{Binding InputHexText}"></TextBox>
-                </DockPanel>
-                <DockPanel>
-                    <Button Content="开始波形仿真" 
-        Command="{Binding RunSimulationCommand}" 
-        Background="LightBlue" 
-        Margin="5"/>
-                    <ScottPlot:WpfPlot x:Name="RealTimePlot" Height="200" Width="400" Margin="10"/>
-                    <Button Content="导出CSV" 
-Command="{Binding ExportDataCommand}" 
-Background="LightBlue" 
-Margin="5"/>
-                </DockPanel>
-                <CheckBox x:Name="AutoScrollCheckBox" 
-              Content="自动滚动" 
-              IsChecked="True" 
-              VerticalAlignment="Center" 
-              Margin="0,0,10,0"/>
-                <!-- 替换你原来的 TextBox -->
-                <ListBox x:Name="LogListBox" ItemsSource="{Binding Logs}" Height="200" Background="#F5F5F5">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <!-- 使用横向布局排列日志的每一项 -->
-                            <StackPanel Orientation="Horizontal">
-                                <!-- 时间显示为灰色 -->
-                                <TextBlock Text="{Binding Time}" Foreground="Gray" Width="100"/>
-                                <!-- 类型根据发送/接收显示不同颜色 (进阶功能，目前先统一) -->
-                                <TextBlock Text="{Binding Direction}" FontWeight="Bold" Width="50" Margin="5,0"/>
-                                <!-- 日志正文 -->
-                                <TextBlock Text="{Binding RawData}" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding Value}" Margin="5,0"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </StackPanel>
-        </GroupBox>
-    </Grid>
+	<Window.DataContext>
+		<local:MainViewModel/>
+	</Window.DataContext>
+
+	<Window.Resources>
+		<!-- 方向颜色转换器 -->
+		<Utils:DirectionToColorConverter x:Key="DirectionColorConverter"/>
+
+		<!-- 基础文本样式 -->
+		<Style TargetType="TextBlock">
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei"/>
+		</Style>
+
+		<!-- 全局 ComboBox/TextBox 高度美化 -->
+		<Style TargetType="ComboBox">
+			<Setter Property="Height" Value="26"/>
+			<Setter Property="VerticalContentAlignment" Value="Center"/>
+			<Setter Property="Margin" Value="0,4"/>
+		</Style>
+
+		<!-- 侧边栏按钮样式 (增加鼠标手势) -->
+		<Style x:Key="SideButton" TargetType="Button">
+			<Setter Property="Height" Value="36"/>
+			<Setter Property="Margin" Value="0,6"/>
+			<Setter Property="Background" Value="#0078D7"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Cursor" Value="Hand"/>
+			<Style.Triggers>
+				<Trigger Property="IsMouseOver" Value="True">
+					<Setter Property="Background" Value="#1C97EA"/>
+				</Trigger>
+				<Trigger Property="IsEnabled" Value="False">
+					<Setter Property="Background" Value="#CCCCCC"/>
+					<Setter Property="Foreground" Value="#888888"/>
+				</Trigger>
+			</Style.Triggers>
+		</Style>
+	</Window.Resources>
+
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="300"/>
+			<!-- 左侧配置区稍微加宽，防止文字拥挤 -->
+			<ColumnDefinition Width="*"/>
+			<!-- 右侧监控区 -->
+		</Grid.ColumnDefinitions>
+
+		<!-- ==================== 左侧：参数与控制 ==================== -->
+		<Border Background="White" BorderBrush="#E0E0E0" BorderThickness="0,0,1,0">
+			<ScrollViewer VerticalScrollBarVisibility="Auto">
+				<StackPanel Margin="15">
+					<!-- 顶栏标题与状态 -->
+					<StackPanel Margin="0,0,0,15">
+						<TextBlock Text="设备通讯控制台" FontSize="20" FontWeight="Bold" Foreground="#2B2B2B"/>
+						<TextBlock Text="Hardware Comm Panel" FontSize="11" Foreground="#888888" Margin="0,2,0,0"/>
+					</StackPanel>
+
+					<!-- 1. 串口参数组 -->
+					<GroupBox Margin="0,0,0,15" BorderBrush="#D1D1D1">
+						<GroupBox.Header>
+							<StackPanel Orientation="Horizontal" Margin="5,0">
+								<TextBlock Text="硬件接口配置" FontWeight="Bold" Foreground="#444444"/>
+								<!-- 状态灯与文字联动 -->
+								<Ellipse Width="10" Height="10" Margin="10,0,5,0" VerticalAlignment="Center">
+									<Ellipse.Style>
+										<Style TargetType="Ellipse">
+											<Setter Property="Fill" Value="#E81123"/>
+											<!-- 断开红 -->
+											<Style.Triggers>
+												<DataTrigger Binding="{Binding IsConnected}" Value="True">
+													<Setter Property="Fill" Value="#107C10"/>
+													<!-- 连接绿 -->
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</Ellipse.Style>
+								</Ellipse>
+								<TextBlock FontSize="11" FontWeight="Bold">
+									<TextBlock.Style>
+										<Style TargetType="TextBlock">
+											<Setter Property="Text" Value="未连接"/>
+											<Setter Property="Foreground" Value="#E81123"/>
+											<Style.Triggers>
+												<DataTrigger Binding="{Binding IsConnected}" Value="True">
+													<Setter Property="Text" Value="已连接"/>
+													<Setter Property="Foreground" Value="#107C10"/>
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</TextBlock.Style>
+								</TextBlock>
+							</StackPanel>
+						</GroupBox.Header>
+
+						<!-- 使用 Grid 实现完美的表单对齐 -->
+						<Grid Margin="5,10,5,5">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="70"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+							</Grid.RowDefinitions>
+
+							<TextBlock Grid.Row="0" Grid.Column="0" Text="物理串口:"/>
+							<ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedPort}"/>
+
+							<TextBlock Grid.Row="1" Grid.Column="0" Text="波特率:"/>
+							<ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding BaudRateList}" Text="{Binding SelectedBaudRate, UpdateSourceTrigger=LostFocus}" IsEditable="True" />
+
+							<TextBlock Grid.Row="2" Grid.Column="0" Text="数据位:"/>
+							<ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding DataBitsList}" SelectedItem="{Binding SelectedDataBits}" />
+
+							<TextBlock Grid.Row="3" Grid.Column="0" Text="校验位:"/>
+							<ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding ParityMap.Keys}" SelectedItem="{Binding SelectedParityKey}"/>
+
+							<TextBlock Grid.Row="4" Grid.Column="0" Text="停止位:"/>
+							<ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding StopBitsMap.Keys}" SelectedItem="{Binding SelectedStopBitsKey}"/>
+						</Grid>
+					</GroupBox>
+
+					<!-- 2. 操作指令组 -->
+					<GroupBox Header="运行控制" Margin="0,0,0,15" Padding="5" BorderBrush="#D1D1D1">
+						<StackPanel Margin="5">
+							<Button Content="⚡ 建立物理连接" Command="{Binding StartConnectCommand}" Style="{StaticResource SideButton}"/>
+							<Button Content="🚀 启动波形仿真" Command="{Binding RunSimulationCommand}" Style="{StaticResource SideButton}" Background="#107C10"/>
+							<Button Content="🗑️ 清空历史缓存" Command="{Binding ClearDataCommand}" Style="{StaticResource SideButton}" Background="#5C5C5C"/>
+						</StackPanel>
+					</GroupBox>
+
+					<!-- 3. 指令发送组 -->
+					<GroupBox Header="自定义指令下发" Padding="5" BorderBrush="#D1D1D1">
+						<StackPanel Margin="5">
+							<TextBlock Text="HEX 指令 (后台自动封装帧头):" FontSize="11" Foreground="#666666" Margin="0,0,0,5"/>
+							<TextBox x:Name="txtIn" Text="{Binding InputHexText, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="50" Padding="5" TextWrapping="Wrap" VerticalContentAlignment="Top" FontFamily="Consolas" FontSize="14"/>
+							<Button Content="✉ 发送指令" Command="{Binding ExecuteSendCommand}" Style="{StaticResource SideButton}" Background="#D83B01" Margin="0,10,0,0"/>
+						</StackPanel>
+					</GroupBox>
+				</StackPanel>
+			</ScrollViewer>
+		</Border>
+
+		<!-- ==================== 右侧：实时波形与日志 ==================== -->
+		<Grid Grid.Column="1" Margin="15">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="3*"/>
+				<!-- 波形图 -->
+				<RowDefinition Height="2*"/>
+				<!-- 日志列表 -->
+			</Grid.RowDefinitions>
+
+			<!-- 波形可视化容器 -->
+			<Border Background="White" CornerRadius="6" Margin="0,0,0,10" BorderBrush="#E0E0E0" BorderThickness="1">
+				<Border.Effect>
+					<DropShadowEffect Color="#000000" Opacity="0.05" BlurRadius="10" ShadowDepth="2"/>
+				</Border.Effect>
+				<Grid>
+					<TextBlock Text="📈 实时测试波形 (Real-Time Oscilloscope)" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15,10" Foreground="#444444" FontWeight="Bold"/>
+					<ScottPlot:WpfPlot x:Name="RealTimePlot" Margin="10,35,10,10"/>
+				</Grid>
+			</Border>
+
+			<!-- 日志终端容器 -->
+			<!-- ==================== 右侧：日志监控台 (对齐重构版) ==================== -->
+			<Grid Grid.Row="1" Margin="5">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<!-- 表头 -->
+					<RowDefinition Height="*"/>
+					<!-- 列表 -->
+				</Grid.RowDefinitions>
+
+				<!-- 1. 控制栏 -->
+				<Grid Margin="0,0,0,10">
+					<TextBlock Text="📄 通讯报文监控台" FontWeight="Bold" Foreground="#444444" VerticalAlignment="Center"/>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+						<CheckBox x:Name="AutoScrollCheckBox" Content="自动滚动" IsChecked="True" Margin="0,0,15,0" VerticalAlignment="Center"/>
+						<Button Content="📁 导出 CSV 报告" Command="{Binding ExportDataCommand}" Padding="15,4" Background="#E1DFDD" BorderThickness="0" Cursor="Hand" FontWeight="SemiBold"/>
+					</StackPanel>
+				</Grid>
+
+				<!-- 2. 修正后的表头：重点在于右侧留出了 18 像素的滚动条补偿空间 -->
+				<Border Grid.Row="1" Background="#F0F0F0" BorderBrush="#E0E0E0" BorderThickness="1,1,1,0" Padding="5,6,23,6">
+					<!-- 注意上面的 Padding：右侧设为 23 (5个基础边距 + 18个滚动条补偿) -->
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="100"/>
+							<ColumnDefinition Width="60"/>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="80"/>
+						</Grid.ColumnDefinitions>
+						<TextBlock Text="时间 (Time)" Foreground="#666666" FontSize="11" FontWeight="Bold"/>
+						<TextBlock Grid.Column="1" Text="方向" Foreground="#666666" FontSize="11" FontWeight="Bold"/>
+						<TextBlock Grid.Column="2" Text="原始 HEX 报文" Foreground="#666666" FontSize="11" FontWeight="Bold"/>
+						<TextBlock Grid.Column="3" Text="物理量" Foreground="#666666" FontSize="11" FontWeight="Bold" TextAlignment="Left"/>
+					</Grid>
+				</Border>
+
+				<!-- 3. 修正后的 ListBox -->
+				<Border Grid.Row="2" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="0,0,3,3">
+					<ListBox x:Name="LogListBox" ItemsSource="{Binding Logs}" BorderThickness="0" Background="Transparent"
+							 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+							 ScrollViewer.VerticalScrollBarVisibility="Visible">
+						<!-- 强制显示滚动条，确保布局永远稳定 -->
+
+						<ListBox.ItemContainerStyle>
+							<Style TargetType="ListBoxItem">
+								<Setter Property="Padding" Value="5,4"/>
+								<Setter Property="Background" Value="Transparent"/>
+								<Setter Property="BorderThickness" Value="0,0,0,1"/>
+								<Setter Property="BorderBrush" Value="#F0F0F0"/>
+								<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+								<!-- 关键：撑满全宽 -->
+								<Style.Triggers>
+									<Trigger Property="IsMouseOver" Value="True">
+										<Setter Property="Background" Value="#F8F9FA"/>
+									</Trigger>
+								</Style.Triggers>
+							</Style>
+						</ListBox.ItemContainerStyle>
+
+						<ListBox.ItemTemplate>
+							<DataTemplate>
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="100"/>
+										<ColumnDefinition Width="60"/>
+										<ColumnDefinition Width="*"/>
+										<ColumnDefinition Width="80"/>
+									</Grid.ColumnDefinitions>
+									<TextBlock Text="{Binding Time}" Foreground="#888888" FontSize="11"/>
+									<TextBlock Grid.Column="1" Text="{Binding Direction}" FontWeight="Bold"
+											   Foreground="{Binding Direction, Converter={StaticResource DirectionColorConverter}}"/>
+									<TextBlock Grid.Column="2" Text="{Binding RawData}" FontFamily="Consolas" Foreground="#333333" TextWrapping="NoWrap"/>
+									<!-- 物理量数值去掉多余的 Margin，完全靠 Column 宽度和 Alignment 控制 -->
+									<TextBlock Grid.Column="3" Text="{Binding Value}" Foreground="#D83B01"
+											   TextAlignment="Left" FontWeight="Bold"/>
+								</Grid>
+							</DataTemplate>
+						</ListBox.ItemTemplate>
+					</ListBox>
+				</Border>
+			</Grid>		</Grid>
+	</Grid>
 </Window>
