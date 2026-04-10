@@ -65,6 +65,8 @@
 
 ## 📸 界面预览 (UI Screenshot)
 
-`![Main UI](./Assets/screenshot.png)`
+
+![Main UI](assets/screenshot.png)
+
 
 ---
